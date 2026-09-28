@@ -17,4 +17,7 @@ public class AccountResponse {
     private String status;
     private Long customerId;
     private LocalDateTime createdAt;
+    private Long productId;
+    private String productCode;
+    private String productName;
 }

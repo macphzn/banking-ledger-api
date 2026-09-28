@@ -42,7 +42,12 @@ public class Account {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
 }

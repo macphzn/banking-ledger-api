@@ -12,4 +12,7 @@ public class AccountRequest {
 
     @NotNull(message = "Customer ID is required")
     private Long customerId;
+
+    @NotNull(message = "Product ID is required")
+    private Long productId;
 }
