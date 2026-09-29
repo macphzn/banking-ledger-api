@@ -4,13 +4,13 @@ import com.enoch.bankledger.dto.account.AccountRequest;
 import com.enoch.bankledger.dto.account.AccountResponse;
 import com.enoch.bankledger.entity.Account;
 import com.enoch.bankledger.entity.Customer;
-import com.enoch.bankledger.entity.User;
+import com.enoch.bankledger.entity.Product;
 import com.enoch.bankledger.enums.AccountStatus;
 import com.enoch.bankledger.repository.AccountRepository;
 import com.enoch.bankledger.repository.CustomerRepository;
-import com.enoch.bankledger.repository.UserRepository;
+import com.enoch.bankledger.repository.ProductRepository;
+import com.enoch.bankledger.security.CurrentUserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,13 +24,23 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
-    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final CurrentUserService currentUserService;
 
     public AccountResponse createAccount(AccountRequest request) {
-        User currentUser = getCurrentUser();
+        Long userId = currentUserService.getCurrentUserId();
 
-        Customer customer = customerRepository.findByIdAndUserId(request.getCustomerId(), currentUser.getId())
+        // Validate customer belongs to current user
+        Customer customer = customerRepository.findByIdAndUserId(request.getCustomerId(), userId)
                 .orElseThrow(() -> new RuntimeException("Customer not found or access denied"));
+
+        // Validate product exists and is active
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        if (!product.isActive()) {
+            throw new RuntimeException("Product is not active");
+        }
 
         String accountNumber = generateAccountNumber();
 
@@ -40,6 +50,7 @@ public class AccountService {
                 .balance(BigDecimal.ZERO)
                 .status(AccountStatus.ACTIVE)
                 .customer(customer)
+                .product(product)                    // Link to product
                 .build();
 
         Account saved = accountRepository.save(account);
@@ -47,17 +58,20 @@ public class AccountService {
     }
 
     public List<AccountResponse> getMyAccounts() {
-        User currentUser = getCurrentUser();
-        return accountRepository.findByCustomerUserId(currentUser.getId())
+        Long userId = currentUserService.getCurrentUserId();
+
+        return accountRepository.findByCustomerUserId(userId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     public AccountResponse getAccountById(Long id) {
-        User currentUser = getCurrentUser();
-        Account account = accountRepository.findByIdAndCustomerUserId(id, currentUser.getId())
+        Long userId = currentUserService.getCurrentUserId();
+
+        Account account = accountRepository.findByIdAndCustomerUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Account not found or access denied"));
+
         return mapToResponse(account);
     }
 
@@ -70,12 +84,6 @@ public class AccountService {
         return accountNumber;
     }
 
-    private User getCurrentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
     private AccountResponse mapToResponse(Account account) {
         return AccountResponse.builder()
                 .id(account.getId())
@@ -84,6 +92,9 @@ public class AccountService {
                 .balance(account.getBalance())
                 .status(account.getStatus().name())
                 .customerId(account.getCustomer().getId())
+                .productId(account.getProduct().getId())
+                .productCode(account.getProduct().getCode())
+                .productName(account.getProduct().getName())
                 .createdAt(account.getCreatedAt())
                 .build();
     }
