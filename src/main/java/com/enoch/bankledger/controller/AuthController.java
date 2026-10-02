@@ -3,7 +3,7 @@ package com.enoch.bankledger.controller;
 import com.enoch.bankledger.dto.auth.AuthResponse;
 import com.enoch.bankledger.dto.auth.LoginRequest;
 import com.enoch.bankledger.dto.auth.RegisterRequest;
-import com.enoch.bankledger.service.AuthService;
+import com.enoch.bankledger.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

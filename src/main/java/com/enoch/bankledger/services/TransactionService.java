@@ -68,7 +68,6 @@ public class TransactionService {
             throw new RuntimeException("Insufficient balance");
         }
 
-        // Optional: Check minimum balance
         BigDecimal balanceAfter = account.getBalance().subtract(totalDebit);
         if (balanceAfter.compareTo(account.getProduct().getMinimumBalance()) < 0) {
             throw new RuntimeException("Transaction would breach minimum balance");
