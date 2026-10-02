@@ -8,6 +8,7 @@ import com.enoch.bankledger.enums.TransactionType;
 import com.enoch.bankledger.repository.AccountRepository;
 import com.enoch.bankledger.repository.TransactionRepository;
 import com.enoch.bankledger.security.CurrentUserService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class TransactionService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final CurrentUserService currentUserService;
+    private final AuditService auditService;
 
     // ==================== DEPOSIT ====================
     @Transactional
@@ -48,6 +50,14 @@ public class TransactionService {
                 .build();
 
         Transaction saved = transactionRepository.save(transaction);
+        auditService.log(
+                "DEPOSIT",
+                "TRANSACTION",
+                saved.getId(),
+                "Deposited " + amount + " into account " + account.getAccountNumber()
+        );
+
+
         return mapToResponse(saved);
     }
 
@@ -87,6 +97,14 @@ public class TransactionService {
                 .build();
 
         Transaction saved = transactionRepository.save(transaction);
+        auditService.log(
+                "WITHDRAWAL",
+                "TRANSACTION",
+                saved.getId(),
+                "Withdrew " + amount + " (+ fee: " + fee + ") from account " + account.getAccountNumber()
+        );
+
+
         return mapToResponse(saved);
     }
 
@@ -138,6 +156,15 @@ public class TransactionService {
                 .build();
 
         Transaction saved = transactionRepository.save(transaction);
+        auditService.log(
+                "TRANSFER",
+                "TRANSACTION",
+                saved.getId(),
+                "Transferred " + amount + " from " + sourceAccount.getAccountNumber() +
+                        " to " + destinationAccount.getAccountNumber()
+        );
+
+
         return mapToResponse(saved);
     }
 

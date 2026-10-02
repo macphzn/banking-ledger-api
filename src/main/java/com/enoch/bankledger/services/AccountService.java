@@ -3,6 +3,7 @@ package com.enoch.bankledger.services;
 import com.enoch.bankledger.dto.account.AccountRequest;
 import com.enoch.bankledger.dto.account.AccountResponse;
 import com.enoch.bankledger.entity.Account;
+import com.enoch.bankledger.entity.AuditLog;
 import com.enoch.bankledger.entity.Customer;
 import com.enoch.bankledger.entity.Product;
 import com.enoch.bankledger.enums.AccountStatus;
@@ -26,6 +27,8 @@ public class AccountService {
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
     private final CurrentUserService currentUserService;
+    private final AuditService auditService;
+
 
     public AccountResponse createAccount(AccountRequest request) {
         Long userId = currentUserService.getCurrentUserId();
@@ -54,6 +57,12 @@ public class AccountService {
                 .build();
 
         Account saved = accountRepository.save(account);
+        auditService.log(
+                "CREATE_ACCOUNT",
+                "ACCOUNT",
+                saved.getId(),
+                "Created account " + saved.getAccountNumber() + " for customer ID " + customer.getId()
+        );
         return mapToResponse(saved);
     }
 
